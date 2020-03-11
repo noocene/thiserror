@@ -1,4 +1,4 @@
-use std::error::Error;
+use core_error::Error;
 
 pub trait AsDynError {
     fn as_dyn_error(&self) -> &(dyn Error + 'static);

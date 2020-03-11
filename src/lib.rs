@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! This library provides a convenient derive macro for the standard library's
 //! [`std::error::Error`] trait.
 //!
@@ -117,7 +118,7 @@
 //!   so you don't ever need to specify both attributes.
 //!
 //!   Any error type that implements `std::error::Error` or dereferences to `dyn
-//!   std::error::Error` will work as a source.
+//!   core_error::Error` will work as a source.
 //!
 //!   ```rust
 //!   # use std::fmt::{self, Display};
@@ -185,5 +186,7 @@ pub use thiserror_impl::*;
 #[doc(hidden)]
 pub mod private {
     pub use crate::aserror::AsDynError;
-    pub use crate::display::{DisplayAsDisplay, PathAsDisplay};
+    pub use crate::display::DisplayAsDisplay;
+    #[cfg(feature = "std")]
+    pub use crate::display::PathAsDisplay;
 }

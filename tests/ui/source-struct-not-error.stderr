@@ -5,9 +5,9 @@ error[E0599]: no method named `as_dyn_error` found for struct `std::string::Stri
     |       ^^^^^^ method not found in `std::string::String`
     |
     = note: the method `as_dyn_error` exists but the following trait bounds were not satisfied:
-            `std::string::String: std::error::Error`
+            `std::string::String: core_error::Error`
             which is required by `std::string::String: thiserror::aserror::AsDynError`
             `str: std::marker::Sized`
             which is required by `str: thiserror::aserror::AsDynError`
-            `str: std::error::Error`
+            `str: core_error::Error`
             which is required by `str: thiserror::aserror::AsDynError`

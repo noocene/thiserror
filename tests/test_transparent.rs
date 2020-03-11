@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use std::error::Error as _;
+use core_error::Error as _;
 use std::io;
 use thiserror::Error;
 

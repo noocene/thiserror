@@ -20,7 +20,7 @@ fn impl_struct(input: Struct) -> TokenStream {
     let source_body = if input.attrs.transparent.is_some() {
         let only_field = &input.fields[0].member;
         Some(quote! {
-            std::error::Error::source(self.#only_field.as_dyn_error())
+            core_error::Error::source(self.#only_field.as_dyn_error())
         })
     } else if let Some(source_field) = input.source_field() {
         let source = &source_field.member;
@@ -38,7 +38,7 @@ fn impl_struct(input: Struct) -> TokenStream {
     };
     let source_method = source_body.map(|body| {
         quote! {
-            fn source(&self) -> std::option::Option<&(dyn std::error::Error + 'static)> {
+            fn source(&self) -> std::option::Option<&(dyn core_error::Error + 'static)> {
                 use thiserror::private::AsDynError;
                 #body
             }
@@ -90,13 +90,22 @@ fn impl_struct(input: Struct) -> TokenStream {
     let display_body = if input.attrs.transparent.is_some() {
         let only_field = &input.fields[0].member;
         Some(quote! {
-            std::fmt::Display::fmt(&self.#only_field, __formatter)
+            core::fmt::Display::fmt(&self.#only_field, __formatter)
         })
     } else if let Some(display) = &input.attrs.display {
         let use_as_display = if display.has_bonus_display {
+            {
+                #[cfg(feature = "std")]
+                Some(quote! {
+                    #[allow(unused_imports)]
+                    use thiserror::private::{DisplayAsDisplay, PathAsDisplay};
+                })
+            }
+
+            #[cfg(not(feature = "std"))]
             Some(quote! {
                 #[allow(unused_imports)]
-                use thiserror::private::{DisplayAsDisplay, PathAsDisplay};
+                use thiserror::private::DisplayAsDisplay;
             })
         } else {
             None
@@ -113,7 +122,7 @@ fn impl_struct(input: Struct) -> TokenStream {
     };
     let display_impl = display_body.map(|body| {
         quote! {
-            impl #impl_generics std::fmt::Display for #ty #ty_generics #where_clause {
+            impl #impl_generics core::fmt::Display for #ty #ty_generics #where_clause {
                 fn fmt(&self, __formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                     #body
                 }
@@ -135,7 +144,7 @@ fn impl_struct(input: Struct) -> TokenStream {
     });
 
     quote! {
-        impl #impl_generics std::error::Error for #ty #ty_generics #where_clause {
+        impl #impl_generics core_error::Error for #ty #ty_generics #where_clause {
             #source_method
             #backtrace_method
         }
@@ -153,7 +162,7 @@ fn impl_enum(input: Enum) -> TokenStream {
             let ident = &variant.ident;
             if variant.attrs.transparent.is_some() {
                 let only_field = &variant.fields[0].member;
-                let source = quote!(std::error::Error::source(transparent.as_dyn_error()));
+                let source = quote!(core_error::Error::source(transparent.as_dyn_error()));
                 quote! {
                     #ty::#ident {#only_field: transparent} => #source,
                 }
@@ -175,7 +184,7 @@ fn impl_enum(input: Enum) -> TokenStream {
             }
         });
         Some(quote! {
-            fn source(&self) -> std::option::Option<&(dyn std::error::Error + 'static)> {
+            fn source(&self) -> std::option::Option<&(dyn core_error::Error + 'static)> {
                 use thiserror::private::AsDynError;
                 match self {
                     #(#arms)*
@@ -258,9 +267,18 @@ fn impl_enum(input: Enum) -> TokenStream {
                 .as_ref()
                 .map_or(false, |display| display.has_bonus_display)
         }) {
+            {
+                #[cfg(feature = "std")]
+                Some(quote! {
+                    #[allow(unused_imports)]
+                    use thiserror::private::{DisplayAsDisplay, PathAsDisplay};
+                })
+            }
+
+            #[cfg(not(feature = "std"))]
             Some(quote! {
                 #[allow(unused_imports)]
-                use thiserror::private::{DisplayAsDisplay, PathAsDisplay};
+                use thiserror::private::DisplayAsDisplay;
             })
         } else {
             None
@@ -278,7 +296,7 @@ fn impl_enum(input: Enum) -> TokenStream {
                         Member::Named(ident) => ident.clone(),
                         Member::Unnamed(index) => format_ident!("_{}", index),
                     };
-                    quote!(std::fmt::Display::fmt(#only_field, __formatter))
+                    quote!(core::fmt::Display::fmt(#only_field, __formatter))
                 }
             };
             let ident = &variant.ident;
@@ -288,7 +306,7 @@ fn impl_enum(input: Enum) -> TokenStream {
             }
         });
         Some(quote! {
-            impl #impl_generics std::fmt::Display for #ty #ty_generics #where_clause {
+            impl #impl_generics core::fmt::Display for #ty #ty_generics #where_clause {
                 fn fmt(&self, __formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                     #use_as_display
                     #[allow(unused_variables)]
@@ -318,7 +336,7 @@ fn impl_enum(input: Enum) -> TokenStream {
     });
 
     quote! {
-        impl #impl_generics std::error::Error for #ty #ty_generics #where_clause {
+        impl #impl_generics core_error::Error for #ty #ty_generics #where_clause {
             #source_method
             #backtrace_method
         }

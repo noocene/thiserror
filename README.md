@@ -8,6 +8,8 @@ derive(Error)
 This library provides a convenient derive macro for the standard library's
 [`std::error::Error`] trait.
 
+#### This fork supports `#![no_std]` environments using `core-error` until that project is stabilized.
+
 [`std::error::Error`]: https://doc.rust-lang.org/std/error/trait.Error.html
 
 ```toml

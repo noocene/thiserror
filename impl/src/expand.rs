@@ -17,6 +17,18 @@ fn impl_struct(input: Struct) -> TokenStream {
     let ty = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
+    let mut where_clause = where_clause.cloned();
+
+    if let Some(bounds) = &input.attrs.bounds {
+        if let Some(where_clause) = where_clause.as_mut() {
+            for predicate in &bounds.predicates {
+                where_clause.predicates.push(predicate.clone());
+            }
+        } else {
+            where_clause = Some(bounds.clone())
+        }
+    }
+
     let source_body = if input.attrs.transparent.is_some() {
         let only_field = &input.fields[0].member;
         Some(quote! {
@@ -156,6 +168,18 @@ fn impl_struct(input: Struct) -> TokenStream {
 fn impl_enum(input: Enum) -> TokenStream {
     let ty = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let mut where_clause = where_clause.cloned();
+
+    if let Some(bounds) = &input.attrs.bounds {
+        if let Some(where_clause) = where_clause.as_mut() {
+            for predicate in &bounds.predicates {
+                where_clause.predicates.push(predicate.clone());
+            }
+        } else {
+            where_clause = Some(bounds.clone())
+        }
+    }
 
     let source_method = if input.has_source() {
         let arms = input.variants.iter().map(|variant| {

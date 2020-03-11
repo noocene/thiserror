@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 use syn::parse::{Nothing, ParseStream};
 use syn::{
     braced, bracketed, parenthesized, token, Attribute, Error, Ident, Index, LitInt, LitStr,
-    Result, Token,
+    Result, Token, WhereClause,
 };
 
 pub struct Attrs<'a> {
@@ -13,6 +13,7 @@ pub struct Attrs<'a> {
     pub backtrace: Option<&'a Attribute>,
     pub from: Option<&'a Attribute>,
     pub transparent: Option<&'a Attribute>,
+    pub bounds: Option<WhereClause>,
 }
 
 #[derive(Clone)]
@@ -30,6 +31,7 @@ pub fn get(input: &[Attribute]) -> Result<Attrs> {
         backtrace: None,
         from: None,
         transparent: None,
+        bounds: None,
     };
 
     for attr in input {
@@ -41,6 +43,21 @@ pub fn get(input: &[Attribute]) -> Result<Attrs> {
                 return Err(Error::new_spanned(attr, "duplicate #[source] attribute"));
             }
             attrs.source = Some(attr);
+        } else if attr.path.is_ident("bounds") {
+            if attrs.bounds.is_some() {
+                return Err(Error::new_spanned(attr, "duplicate #[source] attribute"));
+            }
+            match attr.parse_args() {
+                Err(e) => {
+                    return Err(Error::new_spanned(
+                        attr,
+                        format!("invalid where predicate: {}", e),
+                    ))
+                }
+                Ok(data) => {
+                    attrs.bounds = Some(data);
+                }
+            };
         } else if attr.path.is_ident("backtrace") {
             require_empty_attribute(attr)?;
             if attrs.backtrace.is_some() {
